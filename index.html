@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ε-NFA to Minimized DFA Converter | TOC TAE-1</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ε-NFA to Minimized DFA Converter</h1>
+        <p>Theory of Computation (TOC) — Multi-Stage Automata Conversion & Minimization Pipeline</p>
+        <span class="badge-tag">TOC TAE-1 Project</span>
+    </header>
+
+    <div class="app-grid">
+        <!-- LEFT COLUMN: INPUT CONTROLS -->
+        <aside>
+            <!-- SECTION 1: PRESET EXAMPLES -->
+            <div class="card preset-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>📚 Textbook Preset Examples</span>
+                    </h2>
+                </div>
+                <div class="preset-box">
+                    <p style="font-size: 0.85rem; color: #475569; margin-bottom: 10px;">Select a standard textbook problem to auto-populate the pipeline:</p>
+                    <div class="preset-buttons">
+                        <button type="button" class="btn-preset" onclick="loadPreset('preset1')">(a|b)*ab</button>
+                        <button type="button" class="btn-preset" onclick="loadPreset('preset2')">Ends with 01</button>
+                        <button type="button" class="btn-preset" onclick="loadPreset('preset3')">a*b+</button>
+                        <button type="button" class="btn-preset" onclick="loadPreset('preset4')">Cascading ε</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: CUSTOM EPSILON-NFA INPUT -->
+            <div class="card custom-nfa-card">
+                <div class="card-header" style="border-bottom: 2px solid #2563eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <h2 class="card-title" style="color: #1e3a8a;">
+                            <span class="stage-number">✏️</span> Custom Epsilon-NFA Input
+                        </h2>
+                        <button type="button" id="btn-clear-custom" class="btn-reset" onclick="clearForCustomInput()" title="Clear form for entering your custom automaton">
+                            🗑️ Reset / Blank Form
+                        </button>
+                    </div>
+                </div>
+
+                <div class="custom-input-guide">
+                    💡 <strong>How to enter custom NFA:</strong> Define your states, alphabet, start/final states, click <strong>Update Transition Matrix Table</strong>, fill the transition cells (including ε), and press <strong>Run Conversion Pipeline</strong>.
+                </div>
+
+                <form id="nfa-form" onsubmit="event.preventDefault();">
+                    <div class="form-group">
+                        <label for="input-states">States (Q):</label>
+                        <input type="text" id="input-states" class="form-control" placeholder="e.g. q0, q1, q2, q3" value="q0, q1, q2, q3">
+                        <div class="hint">Comma-separated state identifiers (e.g. <code>q0, q1, q2</code>)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-alphabet">Alphabet (Σ):</label>
+                        <input type="text" id="input-alphabet" class="form-control" placeholder="e.g. a, b or 0, 1" value="a, b">
+                        <div class="hint">Comma-separated input symbols excluding ε (e.g. <code>a, b</code> or <code>0, 1</code>)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-start-state">Start State (q₀):</label>
+                        <input type="text" id="input-start-state" class="form-control" placeholder="e.g. q0" value="q0">
+                        <div class="hint">Single start state from Q</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-final-states">Final / Accepting States (F):</label>
+                        <input type="text" id="input-final-states" class="form-control" placeholder="e.g. q3" value="q3">
+                        <div class="hint">Comma-separated final states from Q (e.g. <code>q2</code> or <code>q1, q3</code>)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="button" id="btn-setup-matrix" class="btn btn-secondary btn-block" onclick="buildDynamicTransitionGrid()">
+                            🔄 Update Transition Matrix Table
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Transition Function (δ):</span>
+                            <span style="font-size: 0.8rem; font-weight: normal; color: #2563eb;">Includes ε-column</span>
+                        </label>
+                        <div id="transition-matrix-container">
+                            <!-- Dynamic transition grid inserted here -->
+                        </div>
+                        <div class="hint">Enter comma-separated target states in each cell (e.g. <code>q1, q2</code>). Leave blank for ∅.</div>
+                    </div>
+
+                    <button type="button" id="btn-run-pipeline" class="btn btn-primary btn-block" onclick="runFullPipeline()" style="padding: 14px; font-size: 1.05rem; font-weight: 700; margin-top: 15px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);">
+                        ⚙️ Run Conversion Pipeline
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- RIGHT COLUMN: MULTI-STAGE PIPELINE RESULTS -->
+        <main>
+            <!-- Error Alert -->
+            <div id="pipeline-error" class="alert alert-danger" style="display: none;"></div>
+
+            <!-- Pipeline Output Container -->
+            <div id="pipeline-results">
+
+                <!-- STAGE 1: Input ε-NFA -->
+                <section class="stage-card">
+                    <div class="stage-title">
+                        <span><span class="stage-number">1</span> Stage 1: Input ε-NFA Specification</span>
+                    </div>
+                    <div id="stage1-content"></div>
+                </section>
+
+                <!-- STAGE 2: Epsilon Closures -->
+                <section class="stage-card">
+                    <div class="stage-title">
+                        <span><span class="stage-number">2</span> Stage 2: ε-Closure Computations</span>
+                    </div>
+                    <div id="stage2-content"></div>
+                </section>
+
+                <!-- STAGE 3: Standard NFA -->
+                <section class="stage-card">
+                    <div class="stage-title">
+                        <span><span class="stage-number">3</span> Stage 3: Conversion to Standard NFA (without ε)</span>
+                    </div>
+                    <div id="stage3-content"></div>
+                </section>
+
+                <!-- STAGE 4: Subset Construction (DFA) -->
+                <section class="stage-card">
+                    <div class="stage-title">
+                        <span><span class="stage-number">4</span> Stage 4: Subset Construction (NFA → DFA)</span>
+                    </div>
+                    <div id="stage4-content"></div>
+                </section>
+
+                <!-- STAGE 5: Minimization Partitions -->
+                <section class="stage-card">
+                    <div class="stage-title">
+                        <span><span class="stage-number">5</span> Stage 5: DFA Minimization (Equivalence Partitioning)</span>
+                    </div>
+                    <div id="stage5-content"></div>
+                </section>
+
+                <!-- STAGE 6: Minimized DFA Transition Table -->
+                <section class="stage-card">
+                    <div class="stage-title">
+                        <span><span class="stage-number">6</span> Stage 6: Final Minimized DFA Table</span>
+                    </div>
+                    <div id="stage6-content"></div>
+                </section>
+
+                <!-- STAGE 7: Interactive String Tester & Simulator -->
+                <section class="stage-card">
+                    <div class="stage-title">
+                        <span><span class="stage-number">7</span> Stage 7: String Acceptance Simulator</span>
+                    </div>
+                    
+                    <div class="simulation-box">
+                        <h4 style="margin-bottom: 10px;">🔍 Single String Step-by-Step Path Simulator</h4>
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                            <input type="text" id="test-string-input" class="form-control" placeholder="Enter string (e.g. ab, aab, bab)" style="font-family: monospace;">
+                            <button type="button" id="btn-test-string" class="btn btn-primary" style="white-space: nowrap;">
+                                Test String
+                            </button>
+                        </div>
+                        <div class="hint" style="margin-bottom: 12px;">Leave empty to test the empty string ε.</div>
+
+                        <div id="single-test-result"></div>
+                        <div id="single-test-trace"></div>
+                    </div>
+
+                    <!-- Batch String Testing -->
+                    <div class="simulation-box" style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 10px;">📋 Batch Test Multiple Strings</h4>
+                        <textarea id="batch-strings-input" class="form-control" rows="4" style="font-family: monospace;" placeholder="Enter one string per line..."></textarea>
+                        <button type="button" id="btn-run-batch" class="btn btn-secondary" style="margin-top: 10px;">
+                            Run Batch Validation
+                        </button>
+                        <div id="batch-results-container" style="margin-top: 14px;"></div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <p>Theory of Computation TAE-1 Project | Designed & Built for College Evaluation</p>
+        <p style="margin-top: 4px; font-size: 0.8rem; color: #94a3b8;">Supports ε-closure calculation, subset construction ($2^Q$), equivalence partition minimization ($P_k$), and deterministic simulation.</p>
+    </footer>
+</div>
+
+<!-- Automata Engine & App Scripts -->
+<script src="js/automata.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
