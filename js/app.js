@@ -76,45 +76,69 @@ function setupEventListeners() {
     // Clear / Reset Form for Custom Input
     const btnClear = document.getElementById("btn-clear-custom");
     if (btnClear) {
-        btnClear.addEventListener("click", () => {
+        btnClear.onclick = (e) => {
+            if (e) e.preventDefault();
             clearForCustomInput();
-        });
+        };
     }
 
     // Generate Transition Table Button
-    document.getElementById("btn-setup-matrix").addEventListener("click", () => {
-        buildDynamicTransitionGrid();
-    });
+    const btnSetup = document.getElementById("btn-setup-matrix");
+    if (btnSetup) {
+        btnSetup.onclick = (e) => {
+            if (e) e.preventDefault();
+            buildDynamicTransitionGrid();
+        };
+    }
 
     // Auto-update matrix when states or alphabet changes
-    document.getElementById("input-states").addEventListener("change", () => {
-        buildDynamicTransitionGrid();
-    });
-    document.getElementById("input-alphabet").addEventListener("change", () => {
-        buildDynamicTransitionGrid();
-    });
+    const inputStates = document.getElementById("input-states");
+    if (inputStates) {
+        inputStates.oninput = () => buildDynamicTransitionGrid();
+        inputStates.onchange = () => buildDynamicTransitionGrid();
+    }
+    const inputAlphabet = document.getElementById("input-alphabet");
+    if (inputAlphabet) {
+        inputAlphabet.oninput = () => buildDynamicTransitionGrid();
+        inputAlphabet.onchange = () => buildDynamicTransitionGrid();
+    }
 
     // Run Pipeline Button
-    document.getElementById("btn-run-pipeline").addEventListener("click", () => {
-        runFullPipeline();
-    });
+    const btnPipeline = document.getElementById("btn-run-pipeline");
+    if (btnPipeline) {
+        btnPipeline.onclick = (e) => {
+            if (e) e.preventDefault();
+            runFullPipeline();
+        };
+    }
 
     // Single String Test Button
-    document.getElementById("btn-test-string").addEventListener("click", () => {
-        testSingleString();
-    });
+    const btnTestString = document.getElementById("btn-test-string");
+    if (btnTestString) {
+        btnTestString.onclick = (e) => {
+            if (e) e.preventDefault();
+            testSingleString();
+        };
+    }
 
     // Batch Test Button
-    document.getElementById("btn-run-batch").addEventListener("click", () => {
-        runBatchTests();
-    });
+    const btnBatch = document.getElementById("btn-run-batch");
+    if (btnBatch) {
+        btnBatch.onclick = (e) => {
+            if (e) e.preventDefault();
+            runBatchTests();
+        };
+    }
 
     // String input Enter key
-    document.getElementById("test-string-input").addEventListener("keyup", (e) => {
-        if (e.key === "Enter") {
-            testSingleString();
-        }
-    });
+    const testStringInp = document.getElementById("test-string-input");
+    if (testStringInp) {
+        testStringInp.onkeyup = (e) => {
+            if (e.key === "Enter") {
+                testSingleString();
+            }
+        };
+    }
 }
 
 /**
@@ -170,22 +194,28 @@ function loadPreset(presetKey) {
  * Dynamically builds the interactive input table for transitions δ(q, σ)
  */
 function buildDynamicTransitionGrid(presetTransitions = null) {
-    const states = AutomataEngine.parseSet(document.getElementById("input-states").value);
-    const alphabet = AutomataEngine.parseSet(document.getElementById("input-alphabet").value);
+    const statesInput = document.getElementById("input-states");
+    const alphabetInput = document.getElementById("input-alphabet");
+    if (!statesInput || !alphabetInput) return;
+
+    const states = AutomataEngine.parseSet(statesInput.value);
+    const alphabet = AutomataEngine.parseSet(alphabetInput.value);
     const epsSymbol = "ε";
 
     const container = document.getElementById("transition-matrix-container");
     if (!container) return;
 
-    // If no preset passed, harvest currently entered values from existing table to prevent data loss
+    // Harvest currently entered values from existing table to prevent data loss
     const existingValues = {};
     if (!presetTransitions) {
         const currentInputs = container.querySelectorAll(".matrix-input");
         currentInputs.forEach(inp => {
             const s = inp.dataset.state;
             const sym = inp.dataset.symbol;
-            if (!existingValues[s]) existingValues[s] = {};
-            existingValues[s][sym] = inp.value;
+            if (s && sym) {
+                if (!existingValues[s]) existingValues[s] = {};
+                existingValues[s][sym] = inp.value;
+            }
         });
     }
 
@@ -218,9 +248,11 @@ function buildDynamicTransitionGrid(presetTransitions = null) {
 
         for (const sym of allSymbols) {
             let val = "";
-            if (presetTransitions && presetTransitions[state] && presetTransitions[state][sym]) {
-                val = presetTransitions[state][sym].join(", ");
-            } else if (existingValues[state] && existingValues[state][sym]) {
+            if (presetTransitions && typeof presetTransitions === "object" && presetTransitions[state] && presetTransitions[state][sym]) {
+                val = Array.isArray(presetTransitions[state][sym])
+                    ? presetTransitions[state][sym].join(", ")
+                    : String(presetTransitions[state][sym]);
+            } else if (existingValues[state] && existingValues[state][sym] !== undefined) {
                 val = existingValues[state][sym];
             }
 

@@ -15,8 +15,11 @@ class AutomataEngine {
      */
     static parseSet(inputStr) {
         if (!inputStr) return [];
+        if (typeof inputStr !== 'string') inputStr = String(inputStr);
+        // If string contains commas or semicolons, split by those; otherwise split by whitespace
+        const delimiter = /[,;]/.test(inputStr) ? /[,;]+/ : /\s+/;
         return inputStr
-            .split(',')
+            .split(delimiter)
             .map(s => s.trim())
             .filter(s => s.length > 0);
     }
